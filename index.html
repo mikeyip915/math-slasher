@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>數滅之刃</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;600;800&family=Noto+Serif+JP:wght@700;900&display=swap" rel="stylesheet">
+  <!-- KaTeX for Beautiful Math Equations -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      background-color: #020617; /* Slate 950 */
+      background-image: radial-gradient(circle at top right, #1e1b4b, transparent 40%),
+                        radial-gradient(circle at bottom left, #450a0a, transparent 40%);
+    }
+    .font-anime { font-family: 'Cinzel', serif; }
+    .font-jp { font-family: 'Noto Serif JP', serif; }
+    
+    canvas { image-rendering: auto; } /* Smooth HD rendering */
+    
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .numpad-btn {
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 0.75rem;
+      color: #f8fafc;
+      font-size: 1.5rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+      height: 52px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+    }
+    .numpad-btn:active {
+      transform: scale(0.95);
+      background: #0f172a;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+    .numpad-action {
+      background: linear-gradient(145deg, #991b1b, #7f1d1d);
+      border: 1px solid #ef4444;
+      box-shadow: 0 0 15px rgba(220, 38, 38, 0.4), inset 0 1px 1px rgba(255,255,255,0.2);
+    }
+    .numpad-action:hover { background: linear-gradient(145deg, #dc2626, #991b1b); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="text-slate-100 h-screen flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <header class="p-3 flex justify-between items-center glass-panel z-10 shrink-0 shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-gradient-to-br from-red-600 to-red-900 rounded-lg flex items-center justify-center font-jp font-black text-2xl text-white border border-red-500/50 shadow-[0_0_10px_rgba(220,38,38,0.5)]">斬</div>
+      <div>
+        <h1 class="font-jp font-extrabold tracking-widest text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 to-yellow-500 drop-shadow-sm">
+          數滅之刃
+        </h1>
+        <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold -mt-1">Math Slasher</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="sound-btn" class="p-2 bg-slate-800/80 hover:bg-slate-700 active:scale-95 border border-slate-600 rounded-xl transition duration-150 text-sm">
+        <span id="sound-icon">🔊</span>
+      </button>
+      <div class="bg-emerald-950/50 px-3 py-1 border border-emerald-500/50 rounded-xl text-xs font-bold text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+        HK S1
+      </div>
+      <button onclick="openLeaderboard()" class="bg-yellow-600/20 text-yellow-500 hover:bg-yellow-600/40 active:scale-95 border border-yellow-500/50 px-3 py-1 rounded-xl text-xs font-bold transition shadow-[0_0_8px_rgba(234,179,8,0.2)]">
+        RANKINGS
+      </button>
+    </div>
+  </header>
+
+  <!-- START SCREEN -->
+  <div id="start-screen" class="absolute inset-0 top-16 z-30 flex flex-col items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-lg glass-panel p-8 rounded-3xl flex flex-col gap-8 shadow-2xl">
+      <div class="text-center">
+        <span class="text-sm uppercase tracking-[0.3em] text-red-500 font-bold font-jp">最終選別</span>
+        <h2 class="font-jp text-4xl md:text-5xl font-black text-white mt-3 leading-tight drop-shadow-[0_2px_10px_rgba(220,38,38,0.6)]">數滅之刃</h2>
+        <p class="text-slate-300 text-sm mt-4 leading-relaxed">Demons march towards you. Calculate rapidly to unleash breathing techniques and defend your position. Speed and accuracy define a true Hashira!</p>
+      </div>
+
+      <!-- Difficulty -->
+      <div>
+        <label class="text-xs font-bold uppercase tracking-widest text-slate-400 block mb-3 text-center">SELECT DIFFICULTY (Exercise 3C)</label>
+        <div class="grid grid-cols-2 gap-4">
+          <button id="diff-easy" class="py-3 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-950/20 text-emerald-400 font-bold text-sm tracking-wide transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Mizunoto (Lvl 1)</button>
+          <button id="diff-hard" class="py-3 px-4 rounded-xl border-2 border-slate-700 bg-slate-900 text-slate-400 font-bold text-sm tracking-wide transition-all">Kanoe (Lvl 2)</button>
+        </div>
+      </div>
+
+      <button id="start-game-btn" onclick="startGame()" class="w-full mt-2 bg-gradient-to-r from-red-700 to-red-600 py-4 rounded-xl font-jp font-black text-xl tracking-[0.2em] text-white hover:from-red-600 hover:to-red-500 active:scale-[0.98] transition shadow-[0_0_20px_rgba(220,38,38,0.4)] border border-red-500/50">
+        戦いを始める (START)
+      </button>
+    </div>
+  </div>
+
+  <!-- GAMEPLAY AREA -->
+  <main id="gameplay-area" class="hidden flex-1 flex flex-col w-full max-w-5xl mx-auto h-full overflow-hidden p-2 md:p-4 gap-3">
+    
+    <!-- TOP PANEL: THE BATTLEFIELD CANVAS -->
+    <div class="relative w-full h-[50%] min-h-[250px] rounded-2xl border border-slate-700 bg-slate-950 overflow-hidden shrink-0 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+      
+      <!-- Stats Overlay -->
+      <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-10 pointer-events-none">
+        <!-- HP -->
+        <div>
+          <span class="text-xs font-jp font-bold text-slate-200 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">生命 (HP)</span>
+          <div class="flex gap-1 mt-1" id="hearts-container"></div>
+        </div>
+        
+        <!-- BOSS HP BAR -->
+        <div id="boss-ui" class="hidden flex-1 max-w-md mx-6 flex flex-col items-center transition-all duration-500 opacity-0 translate-y-[-20px]">
+          <span class="text-xs font-jp font-black text-red-500 tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">鬼舞辻 (DEMON KING)</span>
+          <div class="w-full h-4 bg-slate-950 border-2 border-slate-800 rounded-full mt-1 overflow-hidden shadow-inner">
+            <div id="boss-hp-fill" class="h-full bg-gradient-to-r from-red-700 via-red-500 to-orange-500 w-full transition-all duration-300 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+          </div>
+        </div>
+
+        <!-- Kills -->
+        <div class="text-right">
+          <span class="text-xs font-jp font-bold text-slate-200 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">撃破 (KILLS)</span>
+          <div class="text-4xl font-black text-red-500 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]" id="score-val">0</div>
+          <div id="combo-badge" class="hidden text-xs text-yellow-400 font-black animate-bounce drop-shadow-[0_2px_2px_rgba(0,0,0,1)] mt-1 tracking-wider">2 COMBO!</div>
+        </div>
+      </div>
+
+      <!-- Warning Announcement -->
+      <div id="wave-alert" class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 hidden">
+        <h2 id="wave-alert-text" class="text-3xl md:text-5xl font-jp font-black text-white drop-shadow-[0_4px_15px_rgba(220,38,38,1)] tracking-widest animate-pulse scale-110 transition-transform text-center"></h2>
+      </div>
+
+      <canvas id="gameCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+      <div id="screen-flash" class="absolute inset-0 pointer-events-none transition-all duration-150"></div>
+    </div>
+
+    <!-- BOTTOM PANEL: CONTROLS & MATH -->
+    <div class="flex-1 flex flex-col md:flex-row gap-4 w-full h-full glass-panel p-4 rounded-2xl">
+      
+      <!-- Math Display Area -->
+      <div class="flex-1 flex flex-col gap-3">
+        <!-- Equation Box -->
+        <div class="flex-1 bg-slate-950/80 border border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center relative shadow-inner">
+          <span class="absolute top-3 left-4 text-xs font-bold text-slate-400 font-jp tracking-widest">問題 (SOLVE FOR X)</span>
+          <div id="math-question" class="text-3xl md:text-5xl font-semibold text-white tracking-wide mt-2 drop-shadow-lg"></div>
+        </div>
+
+        <!-- Input Box -->
+        <div class="h-20 bg-[#020617] border-2 border-slate-600 rounded-xl flex items-center justify-center relative shadow-inner">
+          <span class="absolute left-6 text-2xl font-mono text-slate-500 font-bold">x =</span>
+          <div id="player-input" class="text-4xl font-bold text-emerald-400 tracking-wider ml-8 font-mono drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>
+          <div class="w-4 h-10 bg-emerald-400 animate-pulse ml-2 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+        </div>
+      </div>
+
+      <!-- Numpad Area -->
+      <div class="w-full md:w-[320px] shrink-0 flex flex-col gap-2">
+        <div class="grid grid-cols-3 gap-2 flex-1">
+          <button class="numpad-btn" onclick="inputKey('1')">1</button>
+          <button class="numpad-btn" onclick="inputKey('2')">2</button>
+          <button class="numpad-btn" onclick="inputKey('3')">3</button>
+          <button class="numpad-btn" onclick="inputKey('4')">4</button>
+          <button class="numpad-btn" onclick="inputKey('5')">5</button>
+          <button class="numpad-btn" onclick="inputKey('6')">6</button>
+          <button class="numpad-btn" onclick="inputKey('7')">7</button>
+          <button class="numpad-btn" onclick="inputKey('8')">8</button>
+          <button class="numpad-btn" onclick="inputKey('9')">9</button>
+          <button class="numpad-btn text-orange-400" onclick="inputKey('-')">-</button>
+          <button class="numpad-btn" onclick="inputKey('0')">0</button>
+          <button class="numpad-btn text-orange-400" onclick="inputKey('.')">.</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 h-16">
+          <button class="numpad-btn bg-slate-800 text-yellow-400 text-base font-jp" onclick="inputKey('BACK')">消去 <span class="text-xs font-mono ml-1 text-slate-400">(DEL)</span></button>
+          <button id="attack-btn" class="numpad-btn numpad-action text-white text-lg font-jp" onclick="submitAnswer()">攻撃 <span class="text-xs font-mono ml-1 text-red-200">(ENTER)</span></button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- LEADERBOARD MODAL -->
+  <div id="leaderboard-modal" class="hidden absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+    <h2 class="font-anime text-3xl md:text-5xl font-extrabold text-yellow-500 drop-shadow-md mb-6">HASHIRA RANKINGS</h2>
+    <div id="ranking-environment-tag" class="text-xs text-slate-400 -mt-4 mb-4 font-bold uppercase tracking-widest bg-slate-900 border border-slate-800 px-3 py-1 rounded-full">Local Scores</div>
+    <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-4 shadow-2xl">
+      <div class="flex justify-between text-xs text-slate-500 font-bold border-b border-slate-700 pb-2 mb-2 px-2">
+        <span>RANK & NAME</span>
+        <span>SCORE (COMBO)</span>
+      </div>
+      <div id="leaderboard-list" class="flex flex-col gap-2 max-h-72 overflow-y-auto pr-2">
+        <div class="text-slate-400 text-sm py-4">Loading scrolls...</div>
+      </div>
+    </div>
+    <button onclick="closeLeaderboard()" class="mt-8 bg-slate-800 hover:bg-slate-700 border border-slate-500 py-3 px-10 rounded-xl font-jp font-black text-white transition active:scale-95 shadow-lg">
+      閉じる (CLOSE)
+    </button>
+  </div>
+
+  <!-- GAME OVER / VICTORY SCREENS -->
+  <div id="end-screen" class="hidden absolute inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+    <div class="flex flex-col gap-2">
+      <span id="end-subtitle" class="text-base font-jp text-red-500 font-bold tracking-[0.3em]">任務失敗</span>
+      <h2 id="end-title" class="font-anime text-5xl md:text-7xl font-extrabold text-white drop-shadow-[0_0_25px_rgba(220,38,38,0.8)]">SLAUGHTERED</h2>
+      <p id="end-reason" class="text-slate-300 text-lg mt-3 max-w-md mx-auto">The vampires breached your position. Your breathing technique was too slow!</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-2xl mt-8 w-full max-w-sm shadow-2xl">
+      <div class="text-xs font-jp text-slate-400 font-bold uppercase mb-4 tracking-widest border-b border-slate-700 pb-2">最終成績 (Final Stats)</div>
+      <div class="flex justify-between items-center mb-3">
+        <span class="text-lg text-slate-300 font-bold">Total Kills</span>
+        <span class="text-3xl font-black text-red-500 drop-shadow-md" id="final-kills">0</span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="text-lg text-slate-300 font-bold">Max Combo</span>
+        <span class="text-3xl font-black text-yellow-500 drop-shadow-md" id="final-combo">0</span>
+      </div>
+    </div>
+
+    <div id="submit-score-container" class="mt-6 flex flex-col items-center gap-3 w-full max-w-sm">
+      <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Etch your name into history</p>
+      <div class="flex gap-2 w-full">
+        <input type="text" id="player-name" placeholder="YOUR NAME" maxlength="12" class="flex-1 bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white font-mono font-bold text-center focus:outline-none focus:border-red-500">
+        <button id="submit-score-btn" onclick="submitLeaderboard()" class="bg-red-700 hover:bg-red-600 border border-red-500 px-4 py-3 rounded-xl text-white font-bold text-sm transition">SUBMIT</button>
+      </div>
+      <p id="submit-msg" class="text-emerald-400 font-bold text-sm hidden bg-emerald-900/40 px-4 py-2 rounded-lg border border-emerald-500/50">Score Recorded to Leaderboard!</p>
+    </div>
+
+    <button onclick="showMainMenu()" class="mt-6 bg-slate-800 hover:bg-slate-700 border border-slate-500 py-3 px-10 rounded-xl font-jp font-black tracking-widest text-white transition active:scale-95 shadow-lg">
+      戻る (RETURN TO MENU)
+    </button>
+  </div>
+
+  <script type="module">
+    // --- FIREBASE INTEGRATION (LEADERBOARDS) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    let db = null, auth = null, currentUser = null, appId = 'default-app-id';
+    let leaderboardData = [];
+    let isFirebase = false;
+
+    // Optional: Paste your own Firebase config here to host a shared global leaderboard for your colleagues/students outside our platform!
+    const myCustomFirebaseConfig = null; 
+
+    try {
+      let activeConfig = null;
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        activeConfig = JSON.parse(__firebase_config);
+      } else if (myCustomFirebaseConfig) {
+        activeConfig = myCustomFirebaseConfig;
+      }
+
+      if (activeConfig) {
+        const app = initializeApp(activeConfig);
+        auth = getAuth(app); db = getFirestore(app);
+        appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        isFirebase = true;
+        document.getElementById('ranking-environment-tag').textContent = "Global Rankings";
+
+        const initAuth = async () => {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+          else await signInAnonymously(auth);
+        };
+        initAuth();
+        onAuthStateChanged(auth, user => { currentUser = user; fetchLeaderboard(); });
+      } else {
+        setupLocalLeaderboardFallback();
+      }
+    } catch(e) { 
+      console.warn("Firebase failed to initialize. Switching to Local storage rankings.");
+      setupLocalLeaderboardFallback();
+    }
+
+    function fetchLeaderboard() {
+      if (!isFirebase || !currentUser || !db) return;
+      const ref = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+      onSnapshot(ref, (snapshot) => {
+        let scores = []; snapshot.forEach(doc => scores.push(doc.data()));
+        scores.sort((a, b) => b.score - a.score || b.combo - a.combo);
+        leaderboardData = scores.slice(0, 10); renderLeaderboard();
+      }, (err) => console.error(err));
+    }
+
+    // LOCAL STORAGE FALLBACK FOR GITHUB PAGES
+    function setupLocalLeaderboardFallback() {
+      isFirebase = false;
+      document.getElementById('ranking-environment-tag').textContent = "Local Highscores";
+      loadLocalLeaderboard();
+    }
+
+    function loadLocalLeaderboard() {
+      try {
+        const stored = localStorage.getItem('math_slasher_leaderboard');
+        leaderboardData = stored ? JSON.parse(stored) : [];
+        renderLeaderboard();
+      } catch(e) { console.error("Local storage reads blocked/failed:", e); }
+    }
+
+    function renderLeaderboard() {
+      const list = document.getElementById('leaderboard-list'); list.innerHTML = '';
+      if (leaderboardData.length === 0) { list.innerHTML = '<div class="text-slate-400 text-sm py-4">No records yet. Be the first!</div>'; return; }
+      leaderboardData.forEach((entry, idx) => {
+        const row = document.createElement('div');
+        row.className = `flex justify-between items-center p-3 rounded-lg ${idx === 0 ? 'bg-yellow-500/20 border border-yellow-500/50' : 'bg-slate-800/50'}`;
+        row.innerHTML = `<div class="flex items-center gap-3"><span class="font-mono font-bold text-sm ${idx === 0 ? 'text-yellow-400' : 'text-slate-400'}">#${idx + 1}</span><span class="font-bold text-white uppercase text-base tracking-wider">${entry.name}</span></div><div class="text-right"><span class="text-red-400 font-black text-xl">${entry.score}</span><span class="text-yellow-500 font-bold text-xs ml-1">(${entry.combo}c)</span></div>`;
+        list.appendChild(row);
+      });
+    }
+
+    async function submitLeaderboard() {
+      const nameInput = document.getElementById('player-name');
+      const name = nameInput.value.trim() || 'SLAYER';
+      
+      document.getElementById('submit-score-btn').disabled = true; 
+      document.getElementById('submit-score-btn').classList.add('opacity-50');
+
+      if (isFirebase && currentUser && db) {
+        try {
+          await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard'), { name: name, score: GameState.score, combo: GameState.maxCombo, timestamp: Date.now(), userId: currentUser.uid });
+          onSubmitSuccess();
+        } catch(e) { console.error(e); }
+      } else {
+        // Local Fallback Submission
+        try {
+          leaderboardData.push({ name: name, score: GameState.score, combo: GameState.maxCombo, timestamp: Date.now() });
+          leaderboardData.sort((a, b) => b.score - a.score || b.combo - a.combo);
+          leaderboardData = leaderboardData.slice(0, 10);
+          localStorage.setItem('math_slasher_leaderboard', JSON.stringify(leaderboardData));
+          renderLeaderboard();
+          onSubmitSuccess();
+        } catch(e) { console.error(e); }
+      }
+    }
+
+    function onSubmitSuccess() {
+      document.getElementById('submit-score-btn').classList.add('hidden'); 
+      document.getElementById('player-name').classList.add('hidden'); 
+      document.getElementById('submit-msg').classList.remove('hidden');
+    }
+
+    // --- SYNTHESIZED WEB AUDIO ENGINE ---
+    const AudioEngine = {
+      ctx: null, enabled: true,
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+      toggle() { this.enabled = !this.enabled; return this.enabled; },
+      playBuzzer(correct) {
+        if (!this.enabled) return; this.init(); const ctx = this.ctx;
+        if (correct) {
+          const osc1 = ctx.createOscillator(); const gainNode = ctx.createGain();
+          osc1.type = 'triangle'; osc1.frequency.setValueAtTime(880, ctx.currentTime); osc1.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1);
+          gainNode.gain.setValueAtTime(0.15, ctx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc1.connect(gainNode); gainNode.connect(ctx.destination); osc1.start(); osc1.stop(ctx.currentTime + 0.3);
+        } else {
+          const osc = ctx.createOscillator(); const gainNode = ctx.createGain();
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, ctx.currentTime); osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.3);
+          gainNode.gain.setValueAtTime(0.2, ctx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc.connect(gainNode); gainNode.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.3);
+        }
+      },
+      playSlash(style) {
+        if (!this.enabled) return; this.init(); const ctx = this.ctx;
+        const bufferSize = ctx.sampleRate * 0.4; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource(); noise.buffer = buffer; const filter = ctx.createBiquadFilter(); const gainNode = ctx.createGain();
+        if (style === 'flame') { filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, ctx.currentTime); filter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3); } 
+        else if (style === 'thunder') { filter.type = 'bandpass'; filter.frequency.setValueAtTime(3000, ctx.currentTime); filter.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.2); } 
+        else { filter.type = 'highpass'; filter.frequency.setValueAtTime(1500, ctx.currentTime); filter.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.3); }
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        noise.connect(filter); filter.connect(gainNode); gainNode.connect(ctx.destination); noise.start(); noise.stop(ctx.currentTime + 0.3);
+      },
+      playHit() {
+        if (!this.enabled) return; this.init(); const ctx = this.ctx;
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(100, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.2);
+      },
+      playBossWarning() {
+        if (!this.enabled) return; this.init(); const ctx = this.ctx;
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, ctx.currentTime); osc.frequency.setValueAtTime(250, ctx.currentTime + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 1.0);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 1.0);
+      }
+    };
+
+    // --- ASSET MANAGER (For Defaults) ---
+    const Sprites = { slayer: new Image(), demon: new Image(), boss: new Image() };
+    const SpriteStatus = { slayer: false, demon: false, boss: false };
+
+    // --- GAME ENGINE & STATE ---
+    const GameState = {
+      breathingStyle: 'water', difficulty: 'easy',     
+      score: 0, combo: 0, maxCombo: 0, hp: 3, maxHp: 3,
+      currentQuestion: null, currentInput: "",
+      vampires: [], particles: [], sakura: [], 
+      boss: { active: false, hp: 5, maxHp: 5, x: 0, y: 0, attackTimer: 0, projectiles: [] },
+      slasherDash: { active: false, timer: 0 },
+      isGameOver: false, canvas: null, ctx: null, lastTime: 0,
+      slayerPos: { x: 100, y: 0 }, gameWidth: 0, gameHeight: 0,
+      
+      init() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.resizeCanvas(); window.addEventListener('resize', () => this.resizeCanvas());
+      },
+      resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1; const rect = this.canvas.parentElement.getBoundingClientRect(); 
+        this.canvas.width = rect.width * dpr; this.canvas.height = rect.height * dpr; this.ctx.scale(dpr, dpr);
+        this.gameWidth = rect.width; this.gameHeight = rect.height; this.slayerPos.y = this.gameHeight - 40; 
+        if(this.sakura.length === 0) {
+          for(let i=0; i<40; i++) this.sakura.push({ x: Math.random()*this.gameWidth, y: Math.random()*this.gameHeight, s: Math.random()*1.5+0.5, a: Math.random()*Math.PI*2 });
+        }
+      }
+    };
+
+    // --- SMART DYNAMIC MATH GENERATION SYSTEM (HK S1 LEVEL) ---
+    function randRange(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    function generateS1Equation(difficulty) {
+      let f = ""; let a = 0;
+      if (difficulty === 'easy') {
+        const type = Math.floor(Math.random() * 3); a = randRange(-15, 15); 
+        if (type === 0) {
+          let coef = randRange(2, 6) * (Math.random() > 0.5 ? 1 : -1); let constant = randRange(-20, 20); while(constant === 0) constant = randRange(-20, 20);
+          let result = coef * a + constant; f = `${coef}x ${constant >= 0 ? '+ '+constant : '- '+Math.abs(constant)} = ${result}`;
+        } else if (type === 1) {
+          let divisor = randRange(2, 6); let constant = randRange(-10, 10); while(constant === 0) constant = randRange(-10, 10);
+          let result = (a + constant) / divisor; while(!Number.isInteger(result)) { a = randRange(-15, 15); result = (a + constant) / divisor; }
+          f = `\\frac{x ${constant >= 0 ? '+ '+constant : '- '+Math.abs(constant)}}{${divisor}} = ${result}`;
+        } else {
+          let coef = randRange(2, 5); let constant = randRange(-10, 10); while(constant === 0) constant = randRange(-10, 10);
+          let result = coef * (a + constant); f = `${coef}(x ${constant >= 0 ? '+ '+constant : '- '+Math.abs(constant)}) = ${result}`;
+        }
+      } else {
+        const type = Math.floor(Math.random() * 3); a = randRange(-10, 10);
+        if (type === 0) {
+          let coef1 = randRange(2, 7); let coef2 = randRange(2, 7); while (coef1 === coef2) coef2 = randRange(2, 7);
+          let constant1 = randRange(-15, 15); let result1 = coef1 * a + constant1; let constant2 = result1 - (coef2 * a);
+          f = `${coef1}x ${constant1 >= 0 ? '+ '+constant1 : '- '+Math.abs(constant1)} = ${coef2}x ${constant2 >= 0 ? '+ '+constant2 : '- '+Math.abs(constant2)}`;
+        } else if (type === 1) {
+          let coef = randRange(2, 5); let divisor = randRange(2, 5); let constant = randRange(-15, 15);
+          let result = (coef * a + constant) / divisor; while(!Number.isInteger(result)) { a = randRange(-10, 10); result = (coef * a + constant) / divisor; }
+          f = `\\frac{${coef}x ${constant >= 0 ? '+ '+constant : '- '+Math.abs(constant)}}{${divisor}} = ${result}`;
+        } else {
+          let outerCoef = randRange(2, 5) * (Math.random() > 0.5 ? 1 : -1); let innerCoef = randRange(2, 5); let innerConst = randRange(-10, 10);
+          let result = outerCoef * (innerCoef * a + innerConst); f = `${outerCoef}(${innerCoef}x ${innerConst >= 0 ? '+ '+innerConst : '- '+Math.abs(innerConst)}) = ${result}`;
+        }
+      }
+      return { f: f, a: a };
+    }
+
+    function renderNextQuestion() {
+      GameState.currentQuestion = generateS1Equation(GameState.difficulty);
+      GameState.currentInput = ""; updateInputDisplay();
+      try { katex.render(GameState.currentQuestion.f, document.getElementById('math-question'), { throwOnError: false, displayMode: true }); } 
+      catch (err) { document.getElementById('math-question').textContent = GameState.currentQuestion.f; }
+    }
+
+    // --- INPUT LOGIC ---
+    function inputKey(val) {
+      if(GameState.isGameOver) return;
+      if (val === 'BACK') GameState.currentInput = GameState.currentInput.slice(0, -1);
+      else if (val === '-') GameState.currentInput = GameState.currentInput.startsWith('-') ? GameState.currentInput.substring(1) : '-' + GameState.currentInput;
+      else if (val === '.') { if (!GameState.currentInput.includes('.')) GameState.currentInput += '.'; } 
+      else if (GameState.currentInput.length < 8) GameState.currentInput += val;
+      updateInputDisplay();
+    }
+    function updateInputDisplay() { document.getElementById('player-input').textContent = GameState.currentInput; }
+
+    function submitAnswer() {
+      if(GameState.isGameOver || GameState.currentInput === "" || GameState.currentInput === "-") return;
+      if (GameState.vampires.length === 0 && (!GameState.boss.active || GameState.boss.projectiles.length === 0)) return;
+      
+      if (parseFloat(GameState.currentInput) === parseFloat(GameState.currentQuestion.a)) {
+        GameState.score++; GameState.combo++;
+        if (GameState.combo > GameState.maxCombo) GameState.maxCombo = GameState.combo;
+        AudioEngine.playBuzzer(true); AudioEngine.playSlash(GameState.breathingStyle);
+
+        const colors = { flame: 'rgba(239,68,68,0.5)', thunder: 'rgba(234,179,8,0.5)', water: 'rgba(14,165,233,0.5)' };
+        const flash = document.getElementById('screen-flash'); flash.style.backgroundColor = colors[GameState.breathingStyle];
+        setTimeout(() => flash.style.backgroundColor = 'transparent', 100);
+
+        GameState.slasherDash.active = true; GameState.slasherDash.timer = 15; 
+
+        if (GameState.boss.active && GameState.boss.projectiles.length > 0) {
+          const p = GameState.boss.projectiles.shift(); 
+          createParticleSlash(p.x, p.y, GameState.breathingStyle);
+          GameState.boss.hp -= 1; updateBossUI();
+          if (GameState.boss.hp <= 0) { triggerVictory(); return; } else GameState.boss.attackTimer = 60; 
+        } else if (GameState.vampires.length > 0) {
+          GameState.vampires.sort((a, b) => a.x - b.x);
+          const targetedVamp = GameState.vampires.shift();
+          createParticleSlash(targetedVamp.x, targetedVamp.y, GameState.breathingStyle);
+          checkProgression();
+        }
+        updateHUD(); renderNextQuestion();
+      } else {
+        GameState.combo = 0; AudioEngine.playBuzzer(false);
+        const inputArea = document.getElementById('player-input').parentElement;
+        inputArea.classList.add('animate-bounce', 'border-red-500'); setTimeout(() => inputArea.classList.remove('animate-bounce', 'border-red-500'), 300);
+        GameState.currentInput = ""; updateInputDisplay(); updateHUD();
+      }
+    }
+
+    // --- UI HELPERS ---
+    function updateHUD() {
+      const hearts = document.getElementById('hearts-container'); hearts.innerHTML = '';
+      for (let i = 0; i < GameState.hp; i++) {
+        const h = document.createElement('span'); 
+        h.className = `text-2xl transition transform text-red-500 animate-pulse drop-shadow-[0_2px_4px_rgba(220,38,38,0.8)]`; 
+        h.innerHTML = '❤️'; 
+        hearts.appendChild(h);
+      }
+      document.getElementById('score-val').textContent = String(GameState.score).padStart(2, '0');
+      const combo = document.getElementById('combo-badge');
+      if (GameState.combo >= 2) { combo.textContent = `${GameState.combo} 連撃!`; combo.classList.remove('hidden'); } else { combo.classList.add('hidden'); }
+    }
+
+    function createParticleSlash(x, y, style) {
+      const colors = { flame: ['#ef4444', '#f97316', '#f59e0b', '#fde047'], thunder: ['#eab308', '#fef08a', '#ffffff', '#eab308'], water: ['#0ea5e9', '#38bdf8', '#e0f2fe', '#0284c7'] }[style];
+      for (let i = 0; i < 40; i++) {
+        const angle = (Math.random() * Math.PI * 2); const speed = 3 + Math.random() * 10;
+        GameState.particles.push({ x: x, y: y-40, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius: 3 + Math.random() * 5, color: colors[Math.floor(Math.random() * colors.length)], alpha: 1, decay: 0.02 + Math.random() * 0.03 });
+      }
+    }
+
+    function checkProgression() {
+      if (GameState.score === 15 && !GameState.boss.active) activateBossMode();
+      else if (!GameState.boss.active) spawnVampireWave();
+    }
+
+    // --- GAME PROGRESSION & SPAWNING ---
+    function spawnVampireWave() {
+      if (GameState.boss.active) return;
+      const s = GameState.score; let count = 1; let speedBase = GameState.difficulty === 'easy' ? 0.7 : 1.1;
+      
+      if (s < 5) {
+        count = 1;
+      } 
+      else if (s < 10) { 
+        count = 1; 
+        speedBase += 0.2; 
+      } 
+      else if (s < 15) { 
+        count = 2; 
+        speedBase += 0.1; 
+        showWaveWarning(`MULTIPLE DEMONS APPROACH!`); 
+      }
+
+      for (let i = 0; i < count; i++) {
+        GameState.vampires.push({ x: GameState.gameWidth + 40 + (i * 400), y: GameState.gameHeight - 40, speed: speedBase + Math.random() * 0.2, frame: Math.random() * 100 });
+      }
+    }
+
+    function activateBossMode() {
+      GameState.boss.active = true; GameState.boss.hp = GameState.boss.maxHp;
+      GameState.boss.x = GameState.gameWidth - 120; GameState.boss.y = GameState.gameHeight - 70;
+      GameState.boss.attackTimer = 120; GameState.vampires = []; 
+      AudioEngine.playBossWarning(); showWaveWarning("DEMON KING MUZAN APPEARS!");
+      const ui = document.getElementById('boss-ui');
+      ui.classList.remove('hidden'); setTimeout(() => ui.classList.remove('opacity-0', 'translate-y-[-20px]'), 50);
+      updateBossUI();
+    }
+
+    function showWaveWarning(text) {
+      const alertDiv = document.getElementById('wave-alert'); document.getElementById('wave-alert-text').textContent = text;
+      alertDiv.classList.remove('hidden'); setTimeout(() => alertDiv.classList.add('hidden'), 2500);
+    }
+    function updateBossUI() { document.getElementById('boss-hp-fill').style.width = `${Math.max(0, (GameState.boss.hp / GameState.boss.maxHp) * 100)}%`; }
+
+    // --- EVENT CONTROLLERS & INITIALIZATION ---
+    function setupEventListeners() {
+      document.getElementById('sound-btn').addEventListener('click', () => {
+        const a = AudioEngine.toggle(); document.getElementById('sound-icon').textContent = a ? '🔊' : '🔇';
+      });
+
+      const btnEasy = document.getElementById('diff-easy'); const btnHard = document.getElementById('diff-hard');
+      btnEasy.addEventListener('click', () => { GameState.difficulty = 'easy'; btnEasy.classList.replace('border-slate-700','border-emerald-500'); btnEasy.classList.replace('bg-slate-900','bg-emerald-950/20'); btnEasy.classList.replace('text-slate-400','text-emerald-400'); btnHard.classList.replace('border-emerald-500','border-slate-700'); btnHard.classList.replace('bg-emerald-950/20','bg-slate-900'); btnHard.classList.replace('text-emerald-400','text-slate-400'); });
+      btnHard.addEventListener('click', () => { GameState.difficulty = 'hard'; btnHard.classList.replace('border-slate-700','border-emerald-500'); btnHard.classList.replace('bg-slate-900','bg-emerald-950/20'); btnHard.classList.replace('text-slate-400','text-emerald-400'); btnEasy.classList.replace('border-emerald-500','border-slate-700'); btnEasy.classList.replace('bg-emerald-950/20','bg-slate-900'); btnEasy.classList.replace('text-emerald-400','text-slate-400'); });
+
+      window.addEventListener('keydown', (e) => {
+        if (GameState.isGameOver || document.getElementById('gameplay-area').classList.contains('hidden')) return;
+        if (e.key >= '0' && e.key <= '9') inputKey(e.key);
+        else if (e.key === '-' || e.key === '_') inputKey('-'); else if (e.key === '.') inputKey('.');
+        else if (e.key === 'Backspace' || e.key === 'Delete') inputKey('BACK');
+        else if (e.key === 'Enter') {
+          e.preventDefault(); submitAnswer();
+          document.getElementById('attack-btn').classList.add('scale-95'); setTimeout(() => document.getElementById('attack-btn').classList.remove('scale-95'), 100);
+        }
+      });
+
+      // --- SMART FLOOD FILL IMAGE BACKGROUND REMOVER ---
+      const processImage = (imgSrc, callback) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // Fix for external remote image security limits
+        img.onload = () => {
+          const mode = 'edges';
+          const canvas = document.createElement('canvas');
+          const MAX = 400; 
+          let scale = 1;
+          if (img.width > MAX || img.height > MAX) { scale = Math.min(MAX / img.width, MAX / img.height); }
+          canvas.width = img.width * scale; canvas.height = img.height * scale;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          const w = canvas.width, h = canvas.height;
+          const tr = data[0], tg = data[1], tb = data[2];
+
+          const stack = []; const visited = new Uint8Array(w * h);
+          const pushIfValid = (x, y) => {
+            if (x >= 0 && x < w && y >= 0 && y < h) {
+              const idx = (y * w + x) * 4;
+              if (!visited[y * w + x]) {
+                const r = data[idx], g = data[idx+1], b = data[idx+2], a = data[idx+3];
+                if (a > 0 && Math.abs(r-tr)<20 && Math.abs(g-tg)<20 && Math.abs(b-tb)<20) stack.push([x, y]);
+              }
+            }
+          };
+
+          for(let x=0; x<w; x+=5) { pushIfValid(x, 0); pushIfValid(x, h-1); }
+          for(let y=0; y<h; y+=5) { pushIfValid(0, y); pushIfValid(w-1, y); }
+
+          while(stack.length > 0) {
+            const [x, y] = stack.pop(); const idx = (y * w + x) * 4;
+            if (visited[y * w + x]) continue;
+            visited[y * w + x] = 1; data[idx+3] = 0; 
+            pushIfValid(x+1, y); pushIfValid(x-1, y); pushIfValid(x, y+1); pushIfValid(x, y-1);
+          }
+
+          for (let y = 1; y < h - 1; y++) {
+            for (let x = 1; x < w - 1; x++) {
+              const idx = (y * w + x) * 4;
+              if (data[idx+3] > 0) {
+                const isEdge = data[((y)*w + (x+1))*4 + 3] === 0 || data[((y)*w + (x-1))*4 + 3] === 0 || data[((y+1)*w + (x))*4 + 3] === 0 || data[((y-1)*w + (x))*4 + 3] === 0;
+                if (isEdge) {
+                  const r = data[idx], g = data[idx+1], b = data[idx+2];
+                  if (Math.abs(r-tr)<50 && Math.abs(g-tg)<50 && Math.abs(b-tb)<50) data[idx+3] = Math.max(0, data[idx+3] - 120); 
+                }
+              }
+            }
+          }
+          
+          ctx.putImageData(imageData, 0, 0);
+          const newImg = new Image(); newImg.onload = () => callback(newImg); newImg.src = canvas.toDataURL();
+        };
+        img.src = imgSrc;
+      };
+
+      // Load Default Github Images Automatically
+      const defaults = {
+        slayer: "https://raw.githubusercontent.com/mikeyip915/math-game-asset/main/tanjiro.jpeg",
+        demon: "https://raw.githubusercontent.com/mikeyip915/math-game-asset/main/akaza.jpeg",
+        boss: "https://raw.githubusercontent.com/mikeyip915/math-game-asset/main/muzan.jpg"
+      };
+
+      processImage(defaults.slayer, (img) => { Sprites.slayer = img; SpriteStatus.slayer = true; });
+      processImage(defaults.demon, (img) => { Sprites.demon = img; SpriteStatus.demon = true; });
+      processImage(defaults.boss, (img) => { Sprites.boss = img; SpriteStatus.boss = true; });
+    }
+
+    // --- HIGH-DEF ANIME RENDERING ---
+    function drawSlayer(ctx, x, y, frame) {
+      ctx.save(); ctx.translate(x, y);
+      const style = GameState.breathingStyle;
+
+      ctx.beginPath(); ctx.ellipse(0, 0, 30, 8, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; ctx.fill();
+      ctx.translate(0, Math.sin(frame * 0.1) * 3);
+
+      if (GameState.slasherDash.active) ctx.rotate(0.2); 
+
+      if (SpriteStatus.slayer) {
+        const h = 130; const w = (Sprites.slayer.width / Sprites.slayer.height) * h;
+        ctx.drawImage(Sprites.slayer, -w/2, -h + 10, w, h);
+      } else {
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath(); ctx.moveTo(-15, -60); ctx.quadraticCurveTo(-40, -30, -25, 0); ctx.lineTo(15, 0); ctx.lineTo(15, -60); ctx.fill();
+        ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(-12, -70, 24, 70, 5); ctx.fill();
+        ctx.fillStyle = '#e0f2fe'; ctx.beginPath(); ctx.arc(0, -85, 18, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath(); ctx.moveTo(-18,-85); ctx.lineTo(-25,-100); ctx.lineTo(-10,-95); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0,-103); ctx.lineTo(10,-115); ctx.lineTo(15,-95); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.ellipse(-7, -85, 4, 6, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(7, -85, 4, 6, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#0369a1';
+        ctx.beginPath(); ctx.arc(-7, -85, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(7, -85, 2, 0, Math.PI*2); ctx.fill();
+
+        ctx.save(); ctx.translate(15, -55);
+        if (GameState.slasherDash.active) ctx.rotate(-Math.PI / 3); else ctx.rotate(Math.PI / 6);
+        ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(50, -50); ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function drawVampire(ctx, x, y, frame) {
+      ctx.save(); ctx.translate(x, y);
+      ctx.beginPath(); ctx.ellipse(0, 0, 25, 8, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; ctx.fill();
+      ctx.translate(0, -Math.abs(Math.sin(frame * 0.15)) * 6);
+
+      if (SpriteStatus.demon) {
+        const h = 120; const w = (Sprites.demon.width / Sprites.demon.height) * h;
+        ctx.drawImage(Sprites.demon, -w/2, -h + 10, w, h);
+      } else {
+        ctx.fillStyle = '#1e0b0b'; 
+        ctx.beginPath(); ctx.moveTo(-15, -60); ctx.lineTo(-25, 0); ctx.lineTo(25, 0); ctx.lineTo(15, -60); ctx.fill();
+        ctx.fillStyle = '#111827'; ctx.beginPath(); ctx.roundRect(-12, -75, 24, 75, 5); ctx.fill();
+        ctx.fillStyle = '#f1f5f9'; ctx.beginPath(); ctx.arc(0, -90, 16, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10; ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.ellipse(-6, -90, 3, 5, -0.2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(6, -90, 3, 5, 0.2, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // --- GAME LOOP ARCHITECTURE ---
+    function drawBoss(ctx, x, y, frame) {
+      ctx.save(); ctx.translate(x, y);
+      ctx.beginPath(); ctx.ellipse(0, 0, 40, 12, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fill();
+      ctx.translate(0, Math.sin(frame * 0.05) * 8);
+
+      if (SpriteStatus.boss) {
+        const h = 180; const w = (Sprites.boss.width / Sprites.boss.height) * h;
+        ctx.shadowColor = '#dc2626'; ctx.shadowBlur = 40;
+        ctx.drawImage(Sprites.boss, -w/2, -h + 10, w, h);
+      } else {
+        ctx.shadowColor = '#dc2626'; ctx.shadowBlur = 30; ctx.fillStyle = '#020617';
+        ctx.beginPath(); ctx.moveTo(-25, -100); ctx.lineTo(-40, 0); ctx.lineTo(40, 0); ctx.lineTo(25, -100); ctx.fill();
+        ctx.fillStyle = '#fdf2f8'; ctx.beginPath(); ctx.arc(0, -115, 20, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.ellipse(0, -130, 40, 6, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(-20, -150, 40, 20, 3); ctx.fill();
+        ctx.fillStyle = '#000000'; ctx.fillRect(-20, -138, 40, 6);
+        ctx.strokeStyle = '#991b1b'; ctx.lineWidth = 4; ctx.shadowBlur = 0;
+        for(let i=0; i<4; i++) {
+          const t = frame * 0.05 + i;
+          ctx.beginPath(); ctx.moveTo(0, -50); ctx.quadraticCurveTo(-60 + Math.sin(t)*30, -80 + Math.cos(t)*20, -80 + Math.sin(t*1.5)*40, -20 + Math.cos(t*1.2)*30); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, -50); ctx.quadraticCurveTo(60 + Math.cos(t)*30, -80 + Math.sin(t)*20, 80 + Math.cos(t*1.5)*40, -20 + Math.sin(t*1.2)*30); ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawBossProjectile(ctx, x, y, frame) {
+      ctx.save(); ctx.translate(x, y);
+      const scale = 1 + Math.sin(frame * 0.3) * 0.2; ctx.scale(scale, scale);
+      const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, 25);
+      grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.3, '#dc2626'); grad.addColorStop(1, 'rgba(153, 27, 27, 0)');
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function gameLoop(time) {
+      if (GameState.isGameOver) return;
+      GameState.lastTime = time; const ctx = GameState.ctx;
+      ctx.clearRect(0, 0, GameState.gameWidth, GameState.gameHeight);
+
+      ctx.fillStyle = '#fbcfe8'; 
+      GameState.sakura.forEach(p => {
+        p.y += p.s; p.x += Math.sin(p.a) * 1.5; p.a += 0.02;
+        if (p.y > GameState.gameHeight) { p.y = -10; p.x = Math.random() * GameState.gameWidth; }
+        ctx.beginPath(); ctx.arc(p.x, p.y, 3 * p.s, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, GameState.gameHeight - 1, GameState.gameWidth, 1);
+
+      let renderX = GameState.slayerPos.x;
+      if (GameState.slasherDash.active) {
+        GameState.slasherDash.timer--; renderX += (GameState.slasherDash.timer > 7 ? 60 : (GameState.slasherDash.timer * 6));
+        if (GameState.slasherDash.timer <= 0) GameState.slasherDash.active = false;
+      }
+      drawSlayer(ctx, renderX, GameState.slayerPos.y, time * 0.05);
+
+      for (let i = GameState.vampires.length - 1; i >= 0; i--) {
+        const vamp = GameState.vampires[i]; vamp.x -= vamp.speed; vamp.frame += 1;
+        drawVampire(ctx, vamp.x, GameState.slayerPos.y, vamp.frame);
+        if (vamp.x < GameState.slayerPos.x + 40) { GameState.vampires.splice(i, 1); takeDamage(); }
+      }
+
+      if (GameState.boss.active) {
+        drawBoss(ctx, GameState.boss.x, GameState.slayerPos.y, time * 0.05);
+        if (GameState.boss.attackTimer > 0) GameState.boss.attackTimer--;
+        else if (GameState.boss.projectiles.length === 0) {
+          GameState.boss.projectiles.push({ x: GameState.boss.x - 40, y: GameState.slayerPos.y - 60, speed: GameState.difficulty === 'easy' ? 2.5 : 4.0, frame: 0 });
+          GameState.boss.attackTimer = 9999; 
+        }
+        for (let i = GameState.boss.projectiles.length - 1; i >= 0; i--) {
+          const p = GameState.boss.projectiles[i]; p.x -= p.speed; p.frame += 1;
+          drawBossProjectile(ctx, p.x, p.y, p.frame);
+          if (p.x < GameState.slayerPos.x + 30) { GameState.boss.projectiles.splice(i, 1); takeDamage(); GameState.boss.attackTimer = 30; }
+        }
+      }
+
+      for (let i = GameState.particles.length - 1; i >= 0; i--) {
+        const p = GameState.particles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+        if (p.alpha <= 0) { GameState.particles.splice(i, 1); continue; }
+        ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function takeDamage() {
+      GameState.hp -= 1; GameState.combo = 0; AudioEngine.playHit();
+      const flash = document.getElementById('screen-flash'); flash.style.backgroundColor = 'rgba(239, 68, 68, 0.6)';
+      setTimeout(() => flash.style.backgroundColor = 'transparent', 200);
+      if (GameState.hp <= 0) { GameState.hp = 0; triggerGameOver(); } else { checkProgression(); renderNextQuestion(); }
+      updateHUD();
+    }
+
+    // --- SCREEN MANAGEMENT ---
+    function startGame() {
+      GameState.isGameOver = false; GameState.score = 0; GameState.combo = 0; GameState.maxCombo = 0; GameState.hp = GameState.maxHp;
+      GameState.vampires = []; GameState.particles = []; GameState.currentInput = "";
+      GameState.boss.active = false; GameState.boss.projectiles = []; document.getElementById('boss-ui').classList.add('hidden');
+
+      document.getElementById('start-screen').classList.add('hidden'); document.getElementById('end-screen').classList.add('hidden');
+      document.getElementById('gameplay-area').classList.remove('hidden'); document.getElementById('gameplay-area').classList.add('flex'); 
+
+      GameState.resizeCanvas(); setTimeout(() => GameState.resizeCanvas(), 50); 
+      checkProgression(); updateHUD(); renderNextQuestion();
+      GameState.lastTime = performance.now(); requestAnimationFrame(gameLoop);
+    }
+
+    function triggerGameOver() {
+      GameState.isGameOver = true;
+      document.getElementById('end-screen').classList.remove('hidden');
+      document.getElementById('end-title').textContent = "SLAUGHTERED";
+      document.getElementById('end-reason').textContent = "The demons breached your position. Your breathing technique was too slow!";
+      document.getElementById('final-kills').textContent = GameState.score;
+      document.getElementById('final-combo').textContent = GameState.maxCombo;
+      
+      document.getElementById('submit-score-container').classList.remove('hidden');
+      document.getElementById('submit-msg').classList.add('hidden');
+      document.getElementById('submit-score-btn').disabled = false;
+      document.getElementById('submit-score-btn').classList.remove('hidden');
+      document.getElementById('player-name').classList.remove('hidden');
+    }
+
+    function triggerVictory() {
+      GameState.isGameOver = true;
+      document.getElementById('end-screen').classList.remove('hidden');
+      document.getElementById('end-subtitle').textContent = "任務完了 (MISSION ACCOMPLISHED)";
+      document.getElementById('end-subtitle').classList.replace('text-red-500', 'text-yellow-400');
+      document.getElementById('end-title').textContent = "DEMON KING DEFEATED";
+      document.getElementById('end-title').classList.replace('drop-shadow-[0_0_25px_rgba(220,38,38,0.8)]', 'drop-shadow-[0_0_25px_rgba(234,179,8,0.8)]');
+      document.getElementById('end-reason').textContent = "You successfully solved the algebraic arts and slayed Muzan!";
+      document.getElementById('final-kills').textContent = GameState.score;
+      document.getElementById('final-combo').textContent = GameState.maxCombo;
+      
+      document.getElementById('submit-score-container').classList.remove('hidden');
+      document.getElementById('submit-msg').classList.add('hidden');
+      document.getElementById('submit-score-btn').disabled = false;
+      document.getElementById('submit-score-btn').classList.remove('hidden');
+      document.getElementById('player-name').classList.remove('hidden');
+    }
+
+    function showMainMenu() {
+      GameState.isGameOver = true;
+      document.getElementById('gameplay-area').classList.remove('flex'); document.getElementById('gameplay-area').classList.add('hidden');
+      document.getElementById('end-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden');
+      document.getElementById('end-subtitle').classList.replace('text-yellow-400', 'text-red-500');
+      document.getElementById('end-title').classList.replace('drop-shadow-[0_0_25px_rgba(234,179,8,0.8)]', 'drop-shadow-[0_0_25px_rgba(220,38,38,0.8)]');
+    }
+
+    window.inputKey = inputKey; window.submitAnswer = submitAnswer; window.startGame = startGame; window.showMainMenu = showMainMenu;
+    window.openLeaderboard = () => {
+      if (!isFirebase) loadLocalLeaderboard();
+      document.getElementById('leaderboard-modal').classList.remove('hidden');
+    };
+    window.closeLeaderboard = () => document.getElementById('leaderboard-modal').classList.add('hidden');
+    window.submitLeaderboard = submitLeaderboard;
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { GameState.init(); setupEventListeners(); });
+    else { GameState.init(); setupEventListeners(); }
+  </script>
+</body>
+</html>
